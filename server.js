@@ -31,20 +31,28 @@ io.on('connection', (socket) => {
     console.log('A user connected');
 
     // Listen for chat messages
-    socket.on('chatMessage', async (msg) => {
+    socket.on('chatMessage', async (msg, callback) => {
         try {
             const savedMessage = await chatService.saveMessage(msg.userId, msg.message);
-
-            // Emit the message to all connected clients
+            
+            // Emit back with the localId and set status to delivered
             io.emit('chatMessage', {
-                user: savedMessage.user.fullName,
+                user: savedMessage.user,
                 message: savedMessage.message,
-                createdAt: savedMessage.createdAt,
+                localId: msg.localId, // Include the localId to match the original message
+                status: 'delivered'
             });
+
+            // Respond to the client that the message was saved successfully
+            callback({ status: 'ok' });
         } catch (error) {
             console.error('Error saving message:', error.message);
+            // Respond to the client with an error status
+            callback({ status: 'error' });
         }
     });
+
+
 
     socket.on('disconnect', () => {
         console.log('A user disconnected');

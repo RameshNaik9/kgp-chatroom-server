@@ -1,8 +1,15 @@
 // /src/controllers/authController.js
+const { signupValidation, loginValidation } = require('../validations/profileValidation');
 const authService = require('../services/authService');
 
 exports.register = async (req, res, next) => {
     try {
+        // Validate the request data
+        const { error } = signupValidation(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
         const { rollNumber, department, fullName, email, password } = req.body;
 
         // Validate IIT Kharagpur email domain
@@ -19,6 +26,12 @@ exports.register = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
     try {
+        // Validate the request data
+        const { error } = loginValidation(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
         const { email, password } = req.body;
         const { token, user } = await authService.loginUser(email, password);
         res.status(200).json({ token, user });
