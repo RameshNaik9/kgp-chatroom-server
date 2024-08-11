@@ -17,8 +17,8 @@ exports.register = async (req, res, next) => {
             return res.status(400).send('Please use your IIT Kharagpur email.');
         }
 
-        const { token, user } = await authService.registerUser(rollNumber, department, fullName, email, password);
-        res.status(201).json({ token, user });
+        const { user } = await authService.registerUser(rollNumber, department, fullName, email, password);
+        res.status(201).json({ user });
     } catch (error) {
         next(error);
     }
@@ -34,7 +34,9 @@ exports.login = async (req, res, next) => {
 
         const { email, password } = req.body;
         const { token, user } = await authService.loginUser(email, password);
-        res.status(200).json({ token, user });
+
+        // Send the token only in the header
+        res.header('Access-Token', token).status(200).json({ user, token });
     } catch (error) {
         next(error);
     }

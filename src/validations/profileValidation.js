@@ -5,7 +5,7 @@ const Joi = require('joi');
 const signupValidation = (data) => {
     const schema = Joi.object({
         rollNumber: Joi.string()
-            .pattern(/^[0-9]{4}[A-Z]{2}[0-9]{4}$/) // Example pattern for roll number: 4 digits, 2 letters, 4 digits
+            .pattern(/^[0-9]{2}[A-Z]{2}[0-9]{5}$/) // Example pattern for roll number: 2 digits, 2 letters, 5 digits
             .required()
             .messages({
                 'string.pattern.base': 'Roll number must follow the format: 4 digits, 2 letters, 4 digits.',
