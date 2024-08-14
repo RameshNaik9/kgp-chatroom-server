@@ -1,11 +1,11 @@
 // /src/routes/index.js
 const express = require('express');
 const authRoutes = require('./authRoutes');
-const chatRoutes = require('./chatRoutes'); // Import the chat routes
+const chatController = require('../controllers/chatController');
 
 const router = express.Router();
 
 router.use('/auth', authRoutes);
-router.use('/chat', chatRoutes); 
+router.get('/messages', chatController.getMessages);
 
 module.exports = router;

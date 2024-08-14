@@ -1,41 +1,39 @@
 // /src/controllers/chatController.js
 const chatService = require('../services/chatService');
 
-exports.getChatHistory = async (req, res, next) => {
+const handleNewMessage = (socket, io) => {
+    socket.on('sendMessage', async (messageData, callback) => {
+        try {
+            const savedMessage = await chatService.saveMessage(messageData);
+            const populatedMessage = await savedMessage.populate('user', 'fullName');
+            
+            // Emit the new message to all connected clients
+            io.emit('newMessage', populatedMessage);
+
+            // Respond to the sender with a success status
+            if (callback) {
+                callback({ status: 'ok' });
+            }
+        } catch (error) {
+            console.error('Error handling new message:', error);
+            if (callback) {
+                callback({ status: 'error', message: error.message });
+            }
+        }
+    });
+};
+
+const getMessages = async (req, res) => {
     try {
         const messages = await chatService.getAllMessages();
-        res.status(200).json(messages);
+        res.json(messages);
     } catch (error) {
-        next(error);
+        res.status(500).json({ error: error.message });
     }
 };
 
-exports.sendMessage = async (req, res, next) => {
-    try {
-        const { userId, message, replyTo } = req.body; // Include replyTo field
-        const savedMessage = await chatService.saveMessage(userId, message, replyTo);
-        res.status(201).json(savedMessage);
-    } catch (error) {
-        next(error);
-    }
+module.exports = {
+    handleNewMessage,
+    getMessages,
 };
 
-exports.editMessage = async (req, res, next) => {
-    try {
-        const { messageId, newMessage } = req.body;
-        const updatedMessage = await chatService.editMessage(messageId, newMessage);
-        res.status(200).json(updatedMessage);
-    } catch (error) {
-        next(error);
-    }
-};
-
-exports.deleteMessage = async (req, res, next) => {
-    try {
-        const { messageId } = req.body;
-        const deletedMessage = await chatService.deleteMessage(messageId);
-        res.status(200).json(deletedMessage);
-    } catch (error) {
-        next(error);
-    }
-};
