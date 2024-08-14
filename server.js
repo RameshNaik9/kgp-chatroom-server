@@ -7,63 +7,39 @@ const { Server } = require('socket.io');
 const connectDB = require('./src/db/db');
 const routes = require('./src/routes');
 const { errorHandler } = require('./src/middleware/errorHandler');
-const chatService = require('./src/services/chatService');
+const { handleNewMessage } = require('./src/controllers/chatController');
 
 const app = express();
 const server = http.createServer(app);
-
-// Middleware
-app.use(express.json());
-
-// CORS Middleware
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));  // Enable CORS
-
-// Socket.io setup
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:3000',
+        origin: '*',
         methods: ['GET', 'POST'],
         credentials: true,
     },
 });
 
-io.on('connection', (socket) => {
-    console.log('A user connected');
+// Middleware
+app.use(express.json());
 
-    // Listen for chat messages
-    socket.on('chatMessage', async (msg, callback) => {
-        try {
-            const savedMessage = await chatService.saveMessage(msg.userId, msg.message);
-            
-            // Emit back with the localId and set status to delivered
-            io.emit('chatMessage', {
-                user: savedMessage.user,
-                message: savedMessage.message,
-                localId: msg.localId, // Include the localId to match the original message
-                status: 'delivered'
-            });
-
-            // Respond to the client that the message was saved successfully
-            callback({ status: 'ok' });
-        } catch (error) {
-            console.error('Error saving message:', error.message);
-            // Respond to the client with an error status
-            callback({ status: 'error' });
-        }
-    });
-
-
-
-    socket.on('disconnect', () => {
-        console.log('A user disconnected');
-    });
-});
+// CORS Middleware
+app.use(cors({ origin: '*', credentials: true }));
 
 // Routes
 app.use('/api', routes);
 
 // Error Handling Middleware
 app.use(errorHandler);
+
+// Socket.IO connection
+io.on('connection', (socket) => {
+    console.log('New client connected');
+    handleNewMessage(socket, io);
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected');
+    });
+});
 
 // Connect to MongoDB
 connectDB();
