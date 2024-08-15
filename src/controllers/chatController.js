@@ -1,21 +1,53 @@
-// /src/controllers/chatController.js
 const chatService = require('../services/chatService');
 
 const handleNewMessage = (socket, io) => {
     socket.on('sendMessage', async (messageData, callback) => {
         try {
+            // Save the message
             const savedMessage = await chatService.saveMessage(messageData);
-            const populatedMessage = await savedMessage.populate('user', 'fullName');
-            
-            // Emit the new message to all connected clients
+
+            // Populate fields
+            const populatedMessage = await chatService.getMessageWithPopulation(savedMessage._id);
+
             io.emit('newMessage', populatedMessage);
 
-            // Respond to the sender with a success status
             if (callback) {
                 callback({ status: 'ok' });
             }
         } catch (error) {
             console.error('Error handling new message:', error);
+            if (callback) {
+                callback({ status: 'error', message: error.message });
+            }
+        }
+    });
+
+    socket.on('deleteMessage', async ({ messageId }, callback) => {
+        try {
+            await chatService.deleteMessage(messageId);
+            io.emit('deleteMessage', messageId);
+
+            if (callback) {
+                callback({ status: 'ok' });
+            }
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            if (callback) {
+                callback({ status: 'error', message: error.message });
+            }
+        }
+    });
+
+    socket.on('editMessage', async ({ messageId, newMessage }, callback) => {
+        try {
+            const updatedMessage = await chatService.editMessage(messageId, newMessage);
+            io.emit('editMessage', updatedMessage);
+
+            if (callback) {
+                callback({ status: 'ok' });
+            }
+        } catch (error) {
+            console.error('Error editing message:', error);
             if (callback) {
                 callback({ status: 'error', message: error.message });
             }
